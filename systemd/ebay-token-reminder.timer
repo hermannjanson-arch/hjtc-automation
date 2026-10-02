@@ -1,0 +1,10 @@
+[Unit]
+Description=Erinnerung 1 Monat vor Ablauf des eBay-Refresh-Tokens (Ablauf ca. 01.01.2028)
+
+[Timer]
+# Persistent: falls der Server zu diesem Zeitpunkt aus ist, wird die Erinnerung beim nächsten Start nachgeholt
+OnCalendar=2027-12-01 09:00:00 Europe/Berlin
+Persistent=true
+
+[Install]
+WantedBy=timers.target

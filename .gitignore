@@ -1,0 +1,33 @@
+# Repo liegt im Home-Ordner: standardmäßig ALLES ignorieren,
+# nur die Projektordner gezielt freigeben (Whitelist).
+/*
+!/.gitignore
+!/ebay-watcher/
+!/ebay-feedback/
+!/ebay-watchdog/
+!/systemd/
+
+# --- Zugangsdaten / Secrets ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# --- Laufzeit-Zustand (ändert sich ständig, gehört nicht ins Repo) ---
+seen_items.json
+feedback_given.json
+/ebay-watchdog/state/
+
+# --- Generierte Ausgaben von regenerate_descriptions.py ---
+/ebay-feedback/preview/
+/ebay-feedback/review.csv
+
+# --- Python ---
+venv/
+__pycache__/
+*.pyc
+
+# --- Backups ---
+*.bak
+*.bak-*

@@ -1,0 +1,10 @@
+[Unit]
+Description=Telegram-Erinnerung: eBay-Refresh-Token läuft bald ab
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+EnvironmentFile=/home/ubuntu/ebay-feedback/.env
+ExecStart=/home/ubuntu/ebay-watchdog/token_reminder.sh

@@ -1,0 +1,10 @@
+[Unit]
+Description=eBay Watchdog (Telegram-Alarm, wenn ein Dienst nicht läuft)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+EnvironmentFile=/home/ubuntu/ebay-feedback/.env
+ExecStart=/home/ubuntu/ebay-watchdog/watchdog.sh

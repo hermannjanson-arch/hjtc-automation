@@ -1,0 +1,15 @@
+[Unit]
+Description=eBay Sammelkarten Watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/ebay-watcher
+EnvironmentFile=/home/ubuntu/ebay-watcher/.env
+ExecStart=/home/ubuntu/ebay-watcher/venv/bin/python3 /home/ubuntu/ebay-watcher/ebay_watcher.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

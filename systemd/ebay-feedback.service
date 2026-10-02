@@ -1,0 +1,15 @@
+[Unit]
+Description=eBay Automatisches Feedback
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/ebay-feedback
+EnvironmentFile=/home/ubuntu/ebay-feedback/.env
+ExecStart=/home/ubuntu/ebay-feedback/venv/bin/python3 /home/ubuntu/ebay-feedback/ebay_feedback_bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

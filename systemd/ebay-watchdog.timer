@@ -1,0 +1,10 @@
+[Unit]
+Description=eBay Watchdog alle 5 Minuten
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
