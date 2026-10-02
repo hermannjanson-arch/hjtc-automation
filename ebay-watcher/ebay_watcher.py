@@ -227,7 +227,13 @@ def run_once(seen: dict) -> None:
 
         for item in items:
             item_id = item.get("itemId")
-            if not item_id or item_id in seen:
+            if not item_id:
+                continue
+            if item_id in seen:
+                # Noch gelistet -> Zeitstempel erneuern, damit das Angebot nicht nach
+                # SEEN_ITEMS_MAX_AGE_DAYS aus der Datei fällt und nach einem Neustart
+                # erneut gemeldet wird.
+                seen[item_id] = datetime.utcnow().isoformat()
                 continue
             if matches_excludes(item, search.get("exclude_keywords", [])):
                 seen[item_id] = datetime.utcnow().isoformat()
