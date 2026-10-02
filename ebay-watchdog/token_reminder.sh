@@ -12,9 +12,9 @@ msg="${PREFIX}⏰ eBay-Refresh-Token läuft bald ab!
 Der Token für ebay-feedback läuft ca. am 01.01.2028 ab (18 Monate nach Erstellung am 02.07.2026). Danach kann der Bot kein Feedback mehr geben.
 
 Erneuern:
-1. cd ~/ebay-feedback && set -a && . ./.env && set +a && venv/bin/python3 ebay_oauth_setup.py
+1. sudo systemd-run --pty --uid=ubuntu -p EnvironmentFile=/home/ubuntu/ebay-feedback/.env /home/ubuntu/ebay-feedback/venv/bin/python3 /home/ubuntu/ebay-feedback/ebay_oauth_setup.py
 2. Mit dem eBay-VERKAUFSKONTO einloggen
-3. Neuen EBAY_REFRESH_TOKEN in ~/ebay-feedback/.env eintragen (in Anführungszeichen!)
+3. Neuen EBAY_REFRESH_TOKEN in ~/ebay-feedback/.env eintragen (OHNE Anführungszeichen, wie bisher)
 4. sudo systemctl restart ebay-feedback
 5. Datum in /etc/systemd/system/ebay-token-reminder.timer auf neuen Ablauf minus 1 Monat setzen"
 

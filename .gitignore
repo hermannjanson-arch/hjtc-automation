@@ -2,6 +2,7 @@
 # nur die Projektordner gezielt freigeben (Whitelist).
 /*
 !/.gitignore
+!/CLAUDE.md
 !/ebay-watcher/
 !/ebay-feedback/
 !/ebay-watchdog/
