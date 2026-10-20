@@ -1,0 +1,11 @@
+[Unit]
+Description=HJTC Neuheiten-Radar (neue Sammelkarten-Sets auf eBay erkennen)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ebay-radar
+EnvironmentFile=/home/ubuntu/ebay-radar/.env
+ExecStart=/home/ubuntu/ebay-radar/venv/bin/python3 /home/ubuntu/ebay-radar/ebay_neuheiten.py
+TimeoutStartSec=900

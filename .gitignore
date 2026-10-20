@@ -7,6 +7,7 @@
 !/ebay-feedback/
 !/ebay-watchdog/
 !/systemd/
+!/ebay-radar/
 
 # --- Zugangsdaten / Secrets ---
 .env
@@ -18,6 +19,8 @@
 # --- Laufzeit-Zustand (ändert sich ständig, gehört nicht ins Repo) ---
 seen_items.json
 feedback_given.json
+neuheiten_register.json
+radar_state.json
 /ebay-watchdog/state/
 
 # --- Generierte Ausgaben von regenerate_descriptions.py ---

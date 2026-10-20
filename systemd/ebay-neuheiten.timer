@@ -1,0 +1,9 @@
+[Unit]
+Description=HJTC Neuheiten-Radar alle 6 Stunden
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:20:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

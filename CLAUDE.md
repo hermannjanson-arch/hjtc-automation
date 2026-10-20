@@ -99,3 +99,10 @@ journalctl -u <dienst> -n 50 --no-pager
 systemctl list-timers 'ebay-*'
 cd ~ && git status && git diff
 ```
+
+### ebay-neuheiten (seit 20.10.2026)
+- `~/ebay-radar/ebay_neuheiten.py`, Unit `ebay-neuheiten.service` (oneshot) + `ebay-neuheiten.timer` (00/06/12/18:20 UTC).
+- Holt je 1.000 neueste Angebote für kakawow, card.fun, cardfun, kayou auf EBAY_US/GB/DE (≈ 60 Calls/Lauf, 240/Tag).
+- Erkennt neue Sets am Code-Präfix im Titel (z. B. PTW-I-01 → PTW). Neues Präfix mit ≥ 2 Angeboten → Telegram. Montags 06–12 Uhr (Berlin) Wochenübersicht der Sets der letzten 90 Tage.
+- State: `neuheiten_register.json` (nicht aus Backup zurückspielen, sonst Doppel-Meldungen). Secrets: `~/ebay-radar/.env` (Kopie der Watcher-Schlüssel).
+- Test: `cd ~/ebay-radar && set -a && . ./.env && set +a && venv/bin/python3 ebay_neuheiten.py --test`
