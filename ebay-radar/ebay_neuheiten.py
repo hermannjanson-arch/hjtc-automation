@@ -19,6 +19,7 @@ Aufruf:
   python ebay_neuheiten.py              normaler Lauf
   python ebay_neuheiten.py --test       nur Ausgabe, nichts senden, nichts speichern
   python ebay_neuheiten.py --woche      Wochenübersicht sofort
+  python ebay_neuheiten.py --monat      Monats-Erinnerung Terapeak-Check sofort
 """
 import os, sys, re, json, time, base64, logging, collections
 from pathlib import Path
@@ -243,12 +244,32 @@ def wochenuebersicht(reg, test):
              + '\n'.join(z for _, z in zeilen[:25]), test)
 
 
+def monatscheck(reg, test):
+    """Am Monatsersten: Sets, die 14–90 Tage alt sind und nicht 🔴 sind -> Terapeak-Check mit Claude fällig."""
+    heute = datetime.now(BERLIN).date()
+    faellig = []
+    for p, e in reg.items():
+        alter = (heute - datetime.strptime(e['erstmals'], '%Y-%m-%d').date()).days
+        if not 14 <= alter <= BEOBACHTEN_TAGE or not e['verlauf']:
+            continue
+        jetzt = e['verlauf'][max(e['verlauf'])]
+        ampel = prognose(e['name'], jetzt['de']).split(' · ')[0].replace('Chance ', '')
+        if '🔴' not in ampel:
+            faellig.append(f"{ampel[:2]} <b>{esc(p)}</b> {esc(e['name'][:45])} · seit {alter} Tagen · DE-Angebote {jetzt['de']}")
+    text = ('🗓 <b>Monatlicher Terapeak-Check</b>\n'
+            'Schreib Claude „Terapeak-Check“ (Chrome offen, bei eBay eingeloggt, ca. 15 Min.). '
+            'Geprüft werden DE-Box-Aufschlag ≥ 40 % und erste DE-Einzelverkäufe ≥ 10 €.\n\n')
+    telegram(text + ('\n'.join(faellig) if faellig else 'Diesen Monat keine neuen Sets mit Chance – nur die bekannten Linien prüfen.'), test)
+
+
 def main():
     test = '--test' in sys.argv
-    reg = lauf(test) if '--woche' not in sys.argv else lade_register()
+    reg = lauf(test) if not {'--woche', '--monat'} & set(sys.argv) else lade_register()
     jetzt = datetime.now(BERLIN)
     if '--woche' in sys.argv or (jetzt.weekday() == 0 and 6 <= jetzt.hour < 12):
         wochenuebersicht(reg, test)
+    if '--monat' in sys.argv or (jetzt.day == 1 and 6 <= jetzt.hour < 12):
+        monatscheck(reg, test)
 
 
 if __name__ == '__main__':
