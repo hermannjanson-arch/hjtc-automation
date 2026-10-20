@@ -17,7 +17,8 @@ Achtung: Mit Preisfilter berechnete Mediane sind nach oben verzerrt – Familien
 ## Bewertung (geeicht 20.10.2026, siehe berichte/scouting/2026-10-20_Eichung_neue_Sets.md)
 - 🟢 bestätigt: Hobby-Box DE ≥ 40 % über weltweit **oder** ≥ 5 DE-Einzelverkäufe ≥ 10 € in 30 Tagen
 - 🔴 abgeschrieben: Box DE ≈ weltweit und keine DE-Einzelverkäufe nach 60 Tagen
-- Max. EK je Familie: `ebay_radar.max_ek(vk, einstellungen)` mit vk = Median (DE wenn ≥ 5 Verkäufe, sonst weltweit); in ¥ mit Tageskurs (api.frankfurter.dev).
+- Max. EK je Familie: `ebay_radar.max_ek(vk, einstellungen)`. **vk = P25 der letzten 30 Tage** (neue Sets fallen nach dem Launch stark – 90-Tage-Mediane enthalten Launch-Preise, Fehler vom 20.10.: GEM Patronus 51 € statt real ~25–36 €). DE-Werte, wenn ≥ 5 Verkäufe, sonst weltweit. Gegradete Karten (PSA/BGS/CGC), Sets und Lots ausschließen. In ¥ mit Tageskurs (api.frankfurter.dev).
+- Plausibilität mit dem Nutzer abgleichen: Er kennt die realen Preise seiner Franchises (HP, Dune) oft besser.
 
 ## Ergebnis
 Bericht `berichte/scouting/JJJJ-MM-TT_Terapeak-Check.md`; Franchise-Liste `FRANCHISE_DE` in `ebay_neuheiten.py` anpassen, wenn sich eine Einstufung als falsch erweist.
