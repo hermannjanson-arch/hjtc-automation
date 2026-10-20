@@ -107,7 +107,7 @@ cd ~ && git status && git diff
 - State: `neuheiten_register.json` (nicht aus Backup zurückspielen, sonst Doppel-Meldungen). Secrets: `~/ebay-radar/.env` (Kopie der Watcher-Schlüssel).
 - Test: `cd ~/ebay-radar && set -a && . ./.env && set +a && venv/bin/python3 ebay_neuheiten.py --test`
 
-### ebay-verkaufs-sync (seit 20.10.2026, Timer erst nach Microsoft-Einrichtung aktivieren)
+### ebay-verkaufs-sync (seit 20.10.2026, aktiv)
 - ~/ebay-sync/verkaufs_sync.py, Unit ebay-verkaufs-sync.service (oneshot) + .timer (stündlich :40). Timer aktivieren: sudo systemctl enable --now ebay-verkaufs-sync.timer
 - Holt bezahlte Bestellungen ab START (21.10.2026, Fulfillment API, User-Token aus Feedback-Schlüsseln) und trägt per Microsoft Graph in OneDrive/Buchhaltung_HJTC_v2.xlsx, Blatt Buchhaltung ein: O Verkaufsdatum (wenn leer), F Käuferversand, K echte Gebühr (beides anteilig nach Artikelwert), T eBay-Nr. Nur Zeilen mit Status Verkauft; sonst Telegram-Erinnerung nach 3 Tagen.
 - Zuordnung: Spalte T = eBay-Nr., sonst Titelähnlichkeit + Preis; mehrdeutig -> Telegram-Rückfrage.
