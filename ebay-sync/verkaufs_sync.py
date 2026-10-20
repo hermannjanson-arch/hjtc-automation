@@ -37,7 +37,7 @@ LETZTE_ZEILE = 999
 START = os.environ.get('SYNC_START', '2026-10-21')                       # nur Bestellungen ab diesem Tag (Altbestand ist bereits gepflegt)
 TAGE_ZURUECK = 45                            # so weit zurück Bestellungen holen
 ERINNERN_NACH_TAGEN = 3                      # Hinweis, wenn Status nach X Tagen noch nicht „Verkauft“
-MS_SCOPES = ['Files.ReadWrite', 'offline_access', 'User.Read']
+MS_SCOPES = ['Files.ReadWrite', 'User.Read']   # offline_access ergänzt MSAL selbst
 # Spalten (1-basiert): A Kategorie, B Karte, C Status, E VK, F Versand, K Gebühr, O Verkaufsdatum, T eBay-Nr.
 SP = {'B': 2, 'C': 3, 'E': 5, 'F': 6, 'K': 11, 'O': 15, 'T': 20}
 
@@ -157,9 +157,10 @@ class GraphExcel:
         return f"{self.BASIS}/me/drive/root:/{requests.utils.quote(DATEI)}:/workbook"
 
     def lesen(self):
-        r = requests.post(f'{self._wb()}/createSession', headers=self._h(), json={'persistChanges': True}, timeout=60)
-        r.raise_for_status()
-        self.session = r.json()['id']
+        if not self.session:
+            r = requests.post(f'{self._wb()}/createSession', headers=self._h(), json={'persistChanges': True}, timeout=60)
+            r.raise_for_status()
+            self.session = r.json()['id']
         r = requests.get(f"{self._wb()}/worksheets('{BLATT}')/range(address='A1:X{LETZTE_ZEILE}')?$select=values,formulas",
                          headers=self._h(), timeout=60)
         r.raise_for_status()
