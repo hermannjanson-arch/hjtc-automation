@@ -61,7 +61,7 @@ def main():
     kaputt = [d['name'] for d in status['dienste'] if not d['ok'] or d.get('fehler_24h')]
     teile.append('\n<b>Systeme:</b> ' + ('alle laufen ✅' if not kaputt else '⚠️ prüfen: ' + ', '.join(kaputt)) +
                  (f" · {len(fehler)} Fehlermeldungen" if fehler else ''))
-    teile.append('\nDetails im Cockpit auf dem Mac (HJTC Cockpit).')
+    teile.append('\nDetails im Tresorraum auf dem Mac (Schreibtisch: „HJTC Tresorraum“).')
     text = '\n'.join(teile)
     if test:
         print(text)
