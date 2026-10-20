@@ -41,6 +41,32 @@ CODE = re.compile(r'\b([A-Z]{2,5})-([A-Z]{1,6})-?(\d{1,3})\b')
 BOX = re.compile(r'\b(box|hobby|blaster|booster|pack|packs|case|display|sealed|ovp)\b', re.I)
 STOP = set('kakawow card cards trading tcg the of and a an no nr new rare holo foil refractor base insert parallel /'.split())
 
+# Prognose (geeicht am 20.10.2026 an 11 neueren Sets, siehe berichte/scouting/2026-10-20_Eichung_neue_Sets.md):
+# Entscheidend war die Stärke der Franchise in DE; DE-Konkurrenz bestimmt, wie lange das Fenster offen ist.
+FRANCHISE_DE = [
+    (2, 'stark', r'harry potter|hogwarts|disney|pixar|stranger things|toy story|frozen|stitch|lion king|zootopia'),
+    (1, 'mittel', r'marvel|avengers|spider|game of thrones|star wars|mandalorian|dune|lord of the rings|hobbit|lotr|'
+                  r'miraculous|ladybug|pok[eé]mon|one piece|naruto|demon slayer|dragon ball|jurassic|wednesday'),
+    (0, 'schwach', r'\bdc\b|batman|superman|twilight|tom (and|&) jerry|warner|looney|my little pony|minions|sanrio|tokidoki'),
+]
+
+
+def prognose(text, de_angebote):
+    """Grobe Ersteinschätzung beim Auftauchen eines Sets: Franchise-Stärke DE + offenes Fenster."""
+    t = text.lower()
+    punkte, stufe = None, 'unbekannt'
+    for p, name, rx in FRANCHISE_DE:
+        if re.search(rx, t):
+            punkte, stufe = p, name
+            break
+    fenster = 1 if de_angebote == 0 else (0 if de_angebote <= 30 else -1)
+    if punkte is None:
+        return f'⚪ Franchise in DE unbekannt – dein Urteil zählt · DE-Angebote: {de_angebote}'
+    s = punkte + fenster
+    ampel = '🟢 hoch' if s >= 3 else ('🟡 mittel' if s == 2 else '🔴 niedrig')
+    return f'Chance {ampel} · Franchise in DE {stufe} · DE-Angebote: {de_angebote}'
+
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('neuheiten')
 
@@ -178,7 +204,9 @@ def lauf(test):
         telegram(f"🆕 <b>Neues Set entdeckt: {esc(p)}</b>\n<b>{esc(o['name'])}</b>{' (' + o['jahr'] + ')' if o['jahr'] else ''}\n"
                  f"{len(o['ids'])} Angebote · {laender} · {len(o['verkaeufer'])} Verkäufer\n"
                  f"Einzelkarten: {preis_text(o)}\n"
-                 f"{'🟢 Noch kein Angebot in DE – Frühstarter-Chance' if de == 0 else f'🟡 Schon {de} Angebote in DE'}\n"
+                 f"{'Noch kein Angebot in DE – Frühstarter-Chance' if de == 0 else f'Schon {de} Angebote in DE'}\n"
+                 f"{prognose(o['name'] + ' ' + ' '.join(o['titel'][:20]), de)}\n"
+                 f"Nach 2–4 Wochen prüfen: Hobby-Box in DE ≥ 40 % teurer als weltweit? Erste DE-Einzelverkäufe ≥ 10 €?\n"
                  + '\n'.join(f"• {esc(items[i]['titel'][:80])}\n  {items[i]['url']}" for i in bsp), test)
     # Verlauf kurz halten
     grenze = (datetime.now(BERLIN) - timedelta(days=BEOBACHTEN_TAGE + 30)).strftime('%Y-%m-%d')
@@ -202,7 +230,8 @@ def wochenuebersicht(reg, test):
         jetzt = e['verlauf'][tage[-1]]
         vor = next((e['verlauf'][d] for d in reversed(tage) if d <= (heute - timedelta(days=7)).isoformat()), None)
         trend = f"{jetzt['angebote'] - vor['angebote']:+d}" if vor else 'neu'
-        zeilen.append((jetzt['angebote'], f"<b>{esc(p)}</b> {esc(e['name'][:45])} · seit {e['erstmals'][8:10]}.{e['erstmals'][5:7]}. · "
+        ampel = prognose(e['name'], jetzt['de']).split(' · ')[0].replace('Chance ', '')
+        zeilen.append((jetzt['angebote'], f"{ampel[:2]} <b>{esc(p)}</b> {esc(e['name'][:45])} · seit {e['erstmals'][8:10]}.{e['erstmals'][5:7]}. · "
                                          f"{jetzt['angebote']} Angebote ({trend} z. Vorwoche) · DE {jetzt['de']} von {jetzt['verkaeufer_de']} Verkäufern"))
     if not zeilen:
         return
