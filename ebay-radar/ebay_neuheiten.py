@@ -54,7 +54,7 @@ FRANCHISE_DE = [
     (2, 'stark', r'potter|hogwarts|disney|pixar|stranger things|toy story|frozen|stitch|lion king|zootopia'),
     (1, 'mittel', r'marvel|avengers|spider|game of thrones|star wars|mandalorian|dune|lord of the rings|hobbit|lotr|'
                   r'miraculous|ladybug|pok[eé]mon|one piece|naruto|demon slayer|dragon ball|jurassic|wednesday'),
-    (0, 'schwach', r'\bdc\b|batman|superman|twilight|tom (and|&) jerry|warner|looney|my little pony|minions|sanrio|tokidoki'),
+    (0, 'schwach', r'\bdc\b|batman|superman|twilight|tom (and |& )?jerry|warner|looney|my little pony|minions|sanrio|tokidoki'),
 ]
 
 
@@ -66,11 +66,14 @@ def prognose(text, de_angebote):
         if re.search(rx, t):
             punkte, stufe = p, name
             break
-    fenster = 1 if de_angebote == 0 else (0 if de_angebote <= 30 else -1)
-    if punkte is None:
-        return f'⚪ Franchise in DE unbekannt – dein Urteil zählt · DE-Angebote: {de_angebote}'
-    s = punkte + fenster
-    ampel = '🟢 hoch' if s >= 3 else ('🟡 mittel' if s == 2 else '🔴 niedrig')
+    # Regel (20.10.2026): schwache Franchise -> immer 🔴; stark -> 🟢 solange DE leer, sonst 🟡;
+    # mittel -> 🟡, ab > 30 DE-Angeboten 🔴
+    if punkte == 0:
+        ampel = '🔴 niedrig'
+    elif punkte == 2:
+        ampel = '🟢 hoch' if de_angebote == 0 else '🟡 mittel'
+    else:
+        ampel = '🟡 mittel' if de_angebote <= 30 else '🔴 niedrig'
     return f'Chance {ampel} · Franchise in DE {stufe} · DE-Angebote: {de_angebote}'
 
 
