@@ -106,3 +106,10 @@ cd ~ && git status && git diff
 - Erkennt neue Sets am Code-Präfix im Titel (z. B. PTW-I-01 → PTW). Neues Präfix mit ≥ 2 Angeboten → Telegram. Montags 06–12 Uhr (Berlin) Wochenübersicht der Sets der letzten 90 Tage.
 - State: `neuheiten_register.json` (nicht aus Backup zurückspielen, sonst Doppel-Meldungen). Secrets: `~/ebay-radar/.env` (Kopie der Watcher-Schlüssel).
 - Test: `cd ~/ebay-radar && set -a && . ./.env && set +a && venv/bin/python3 ebay_neuheiten.py --test`
+
+### ebay-verkaufs-sync (seit 20.10.2026, Timer erst nach Microsoft-Einrichtung aktivieren)
+- ~/ebay-sync/verkaufs_sync.py, Unit ebay-verkaufs-sync.service (oneshot) + .timer (stündlich :40). Timer aktivieren: sudo systemctl enable --now ebay-verkaufs-sync.timer
+- Holt bezahlte Bestellungen ab START (21.10.2026, Fulfillment API, User-Token aus Feedback-Schlüsseln) und trägt per Microsoft Graph in OneDrive/Buchhaltung_HJTC_v2.xlsx, Blatt Buchhaltung ein: O Verkaufsdatum (wenn leer), F Käuferversand, K echte Gebühr (beides anteilig nach Artikelwert), T eBay-Nr. Nur Zeilen mit Status Verkauft; sonst Telegram-Erinnerung nach 3 Tagen.
+- Zuordnung: Spalte T = eBay-Nr., sonst Titelähnlichkeit + Preis; mehrdeutig -> Telegram-Rückfrage.
+- Einrichtung: MS_CLIENT_ID in ~/ebay-sync/.env (App-Registrierung, persönliche Konten, öffentlicher Client), dann venv/bin/python3 verkaufs_sync.py --einrichten (Gerätecode). Token: ms_token_cache.json (600, ignoriert). State: sync_state.json (nicht aus Backup zurückspielen).
+- Probelauf: venv/bin/python3 verkaufs_sync.py --test

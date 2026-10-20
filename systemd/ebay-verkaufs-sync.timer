@@ -1,0 +1,9 @@
+[Unit]
+Description=HJTC Verkaufs-Sync stündlich
+
+[Timer]
+OnCalendar=*-*-* *:40:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

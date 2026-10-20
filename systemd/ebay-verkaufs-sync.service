@@ -1,0 +1,11 @@
+[Unit]
+Description=HJTC Verkaufs-Sync (eBay-Verkäufe in die Buchhaltung auf OneDrive eintragen)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ebay-sync
+EnvironmentFile=/home/ubuntu/ebay-sync/.env
+ExecStart=/home/ubuntu/ebay-sync/venv/bin/python3 /home/ubuntu/ebay-sync/verkaufs_sync.py
+TimeoutStartSec=600
