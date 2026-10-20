@@ -66,6 +66,8 @@ def prognose(text, de_angebote):
         if re.search(rx, t):
             punkte, stufe = p, name
             break
+    if punkte is None:
+        return f'⚪ Franchise in DE unbekannt – dein Urteil zählt · DE-Angebote: {de_angebote}'
     # Regel (20.10.2026): schwache Franchise -> immer 🔴; stark -> 🟢 solange DE leer, sonst 🟡;
     # mittel -> 🟡, ab > 30 DE-Angeboten 🔴
     if punkte == 0:
