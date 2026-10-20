@@ -43,7 +43,7 @@ def main():
     teile = [f"☀️ <b>HJTC Morgenbericht {datetime.now():%d.%m.%Y}</b>"]
     try:
         z, s = bestellungen_24h()
-        teile.append(f"\n<b>Verkäufe letzte 24 Std.:</b> {len(z)} · {s:.2f} €".replace('.', ',') + ('\n' + '\n'.join(esc(x) for x in z) if z else ''))
+        teile.append(f"\n<b>Verkäufe letzte 24 Std.:</b> {len(z)} · {eur(s)}" + ('\n' + '\n'.join(esc(x) for x in z) if z else ''))
     except Exception as e:
         teile.append(f"\nVerkäufe: konnten nicht geladen werden ({esc(str(e))[:100]})")
     ev, gesehen = [], set()
