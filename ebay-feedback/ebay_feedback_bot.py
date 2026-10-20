@@ -31,6 +31,7 @@ import random
 import logging
 import requests
 import xml.etree.ElementTree as ET
+from xml.sax.saxutils import escape
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -47,6 +48,7 @@ POLL_INTERVAL_SECONDS = 3600  # stündlich reicht völlig, Bestellungen sind nic
 
 PROCESSED_ORDERS_FILE = Path(__file__).parent / "feedback_given.json"
 PROCESSED_ORDERS_MAX_AGE_DAYS = 120
+RETRY_HOURS = 24  # so lange werden fehlgeschlagene Bewertungen stündlich neu versucht
 
 # Länder, für die auf Deutsch bewertet wird - alle anderen bekommen Englisch.
 # Enthält sowohl ISO-Ländercodes (falls doch mal eine Adresse mitkommt) als
@@ -225,21 +227,22 @@ def get_transaction_id(order_id: str, item_id: str) -> str | None:
         if txn_item_id == item_id:
             return txn.findtext("e:TransactionID", default=None, namespaces=ns)
 
-    # Fallback: falls kein exakter Item-Match, erste gefundene TransactionID nehmen
-    first = root.find(".//e:TransactionArray/e:Transaction/e:TransactionID", ns)
-    return first.text if first is not None else None
+    # Kein Fallback auf eine fremde Transaktion: lieber melden als falsch bewerten.
+    return None
 
 
-def leave_feedback(item_id: str, transaction_id: str, buyer_username: str, comment: str) -> None:
-    """Vergibt Feedback über die (XML-basierte) Trading API."""
+def leave_feedback(item_id: str, transaction_id: str, buyer_username: str, comment: str) -> str:
+    """Vergibt Feedback über die (XML-basierte) Trading API und gibt die
+    FeedbackID zurück. Ohne FeedbackID gilt die Bewertung als NICHT abgegeben,
+    auch wenn eBay nur eine Warnung statt eines Fehlers meldet."""
     token = get_access_token()
     xml_body = f"""<?xml version="1.0" encoding="utf-8"?>
 <LeaveFeedbackRequest xmlns="urn:ebay:apis:eBLBaseComponents">
   <ItemID>{item_id}</ItemID>
   <TransactionID>{transaction_id}</TransactionID>
-  <TargetUser>{buyer_username}</TargetUser>
+  <TargetUser>{escape(buyer_username)}</TargetUser>
   <CommentType>Positive</CommentType>
-  <CommentText>{comment}</CommentText>
+  <CommentText>{escape(comment)}</CommentText>
   <Role>Seller</Role>
 </LeaveFeedbackRequest>"""
 
@@ -257,8 +260,16 @@ def leave_feedback(item_id: str, transaction_id: str, buyer_username: str, comme
         timeout=15,
     )
     resp.raise_for_status()
-    if "<Ack>Success</Ack>" not in resp.text and "<Ack>Warning</Ack>" not in resp.text:
-        raise RuntimeError(f"eBay meldete keinen Erfolg: {resp.text[:500]}")
+    ns = {"e": "urn:ebay:apis:eBLBaseComponents"}
+    root = ET.fromstring(resp.text)
+    ack = root.findtext("e:Ack", default="", namespaces=ns)
+    messages = "; ".join(m.text for m in root.findall(".//e:Errors/e:LongMessage", ns) if m.text)
+    feedback_id = root.findtext("e:FeedbackID", default="", namespaces=ns)
+    if ack not in ("Success", "Warning") or not feedback_id:
+        raise RuntimeError(f"eBay hat keine Bewertung bestätigt (Ack={ack or '?'}): {messages or resp.text[:500]}")
+    if messages:
+        log.warning("LeaveFeedback Item %s: eBay-Warnung: %s", item_id, messages)
+    return feedback_id
 
 
 def send_telegram(text: str) -> None:
@@ -311,40 +322,58 @@ def run_once(processed: dict) -> None:
         line_items = order.get("lineItems", [])
         if not line_items:
             continue
-        item_id = line_items[0].get("legacyItemId")
 
         if DRY_RUN:
             send_telegram(
                 f"🧪 <b>DRY RUN – würde Feedback senden</b>\n"
                 f"Käufer: {buyer_username} ({country or 'Land unbekannt'})\n"
-                f"Bestellung: {order_id}\n"
+                f"Bestellung: {order_id} ({len(line_items)} Artikel)\n"
                 f"Text: {comment}"
             )
             log.info("[DRY RUN] Würde Feedback senden für Order %s", order_id)
         else:
-            if not item_id:
-                log.warning("Order %s: fehlende Item-ID, überspringe.", order_id)
-                continue
-            try:
-                transaction_id = get_transaction_id(order_id, item_id)
-            except (requests.RequestException, RuntimeError) as e:
-                log.error("Order %s: TransactionID konnte nicht ermittelt werden: %s", order_id, e)
-                send_telegram(f"⚠️ Feedback fehlgeschlagen (TransactionID) für Order {order_id}: {e}")
-                continue
-            if not transaction_id:
-                log.warning("Order %s: keine TransactionID gefunden, überspringe.", order_id)
-                continue
-            try:
-                leave_feedback(item_id, transaction_id, buyer_username, comment)
+            # Jede Position einzeln bewerten; die Order gilt erst als erledigt,
+            # wenn eBay für ALLE Positionen eine FeedbackID bestätigt hat.
+            all_ok = True
+            for li in line_items:
+                item_id = li.get("legacyItemId")
+                if not item_id:
+                    log.warning("Order %s: Position ohne Item-ID, überspringe.", order_id)
+                    all_ok = False
+                    continue
+                item_key = f"{order_id}/{item_id}"
+                if item_key in processed:  # Position schon bewertet, nicht doppelt senden
+                    continue
+                try:
+                    transaction_id = get_transaction_id(order_id, item_id)
+                    if not transaction_id:
+                        raise RuntimeError(f"keine TransactionID für Item {item_id} gefunden")
+                    feedback_id = leave_feedback(item_id, transaction_id, buyer_username, comment)
+                except (requests.RequestException, RuntimeError, ET.ParseError) as e:
+                    log.error("Feedback für Order %s / Item %s fehlgeschlagen: %s", order_id, item_id, e)
+                    fail_key = f"fail:{item_key}"
+                    first_fail = processed.get(fail_key)
+                    if first_fail is None:
+                        # Nur beim ersten Fehlschlag melden, dann stündlich still weiterversuchen.
+                        processed[fail_key] = datetime.utcnow().isoformat()
+                        send_telegram(f"⚠️ Feedback fehlgeschlagen für Order {order_id} (Item {item_id}), versuche es {RETRY_HOURS} Std. weiter: {escape(str(e))[:900]}")
+                        all_ok = False
+                    elif datetime.utcnow() - datetime.fromisoformat(first_fail) > timedelta(hours=RETRY_HOURS):
+                        processed[item_key] = datetime.utcnow().isoformat()
+                        send_telegram(f"🛑 Gebe auf: Order {order_id} (Item {item_id}) bitte in eBay von Hand prüfen. Letzter Fehler: {escape(str(e))[:900]}")
+                    else:
+                        all_ok = False
+                    continue
+                processed[item_key] = datetime.utcnow().isoformat()
+                log.info("Feedback gesendet für Order %s / Item %s (FeedbackID %s)", order_id, item_id, feedback_id)
                 send_telegram(
                     f"✅ <b>Feedback gesendet</b>\n"
                     f"Käufer: {buyer_username} ({country or 'Land unbekannt'})\n"
+                    f"Artikel: {escape(li.get('title') or item_id)[:80]}\n"
+                    f"FeedbackID: {feedback_id}\n"
                     f"Text: {comment}"
                 )
-                log.info("Feedback gesendet für Order %s", order_id)
-            except (requests.RequestException, RuntimeError) as e:
-                log.error("Feedback für Order %s fehlgeschlagen: %s", order_id, e)
-                send_telegram(f"⚠️ Feedback fehlgeschlagen für Order {order_id}: {e}")
+            if not all_ok:
                 continue
 
         processed[order_id] = datetime.utcnow().isoformat()
