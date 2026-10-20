@@ -28,6 +28,11 @@ from datetime import datetime, timedelta, timezone, date
 import requests
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(Path.home() / 'ebay-status'))
+try:
+    import ereignisse                    # gemeinsames Ereignis-Protokoll (Morgenbericht/Cockpit)
+except ImportError:
+    ereignisse = None
 STATE = HERE / 'sync_state.json'
 TOKEN_CACHE = HERE / 'ms_token_cache.json'
 
@@ -264,7 +269,10 @@ def lauf(excel, test):
     for p in sorted(positionen, key=lambda x: x['datum']):
         nr, grund = zuordnen(p, zeilen, belegt)
         if nr is None:
-            offen.append(f"• {p['titel'][:60]} ({p['datum']}, {p['preis']:.2f} €): {grund}")
+            if f"offen:{p['schluessel']}" not in st['erinnert']:          # nur einmal melden
+                offen.append(f"• {p['titel'][:60]} ({p['datum']}, {p['preis']:.2f} €): {grund}")
+                if not test:
+                    st['erinnert'][f"offen:{p['schluessel']}"] = date.today().isoformat()
             continue
         z = zeilen[nr]
         if str(z['C']).strip() not in ('Verkauft', 'Verkauft (Lot)'):
@@ -291,6 +299,15 @@ def lauf(excel, test):
     excel.schliessen()
     if not test:
         speichere_state(st)
+    if ereignisse and not test:
+        for z in eingetragen:
+            ereignisse.melden('Verkaufs-Sync', 'info', 'Eingetragen: ' + z.lstrip('• '))
+        for z in wartend:
+            ereignisse.melden('Verkaufs-Sync', 'aktion', 'Status auf „Verkauft“ setzen: ' + z.lstrip('• '))
+        for z in offen:
+            ereignisse.melden('Verkaufs-Sync', 'aktion', 'eBay-Nr. in Spalte T eintragen: ' + z.lstrip('• '))
+        log.info('eingetragen %s, wartend %s, offen %s (gemeldet im Morgenbericht)', len(eingetragen), len(wartend), len(offen))
+        return
     teile = []
     if eingetragen:
         teile.append('📒 Verkaufs-Sync: in der Buchhaltung ergänzt\n' + '\n'.join(eingetragen))

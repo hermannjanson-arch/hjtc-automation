@@ -1,0 +1,10 @@
+[Unit]
+Description=HJTC Morgenbericht (Telegram-Zusammenfassung)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ebay-status
+EnvironmentFile=/home/ubuntu/ebay-sync/.env
+ExecStart=/home/ubuntu/ebay-radar/venv/bin/python3 /home/ubuntu/ebay-status/morgenbericht.py

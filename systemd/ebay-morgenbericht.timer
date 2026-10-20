@@ -1,0 +1,9 @@
+[Unit]
+Description=HJTC Morgenbericht täglich 07:30 (Berlin)
+
+[Timer]
+OnCalendar=*-*-* 07:30:00 Europe/Berlin
+Persistent=true
+
+[Install]
+WantedBy=timers.target

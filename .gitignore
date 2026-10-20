@@ -9,6 +9,7 @@
 !/systemd/
 !/ebay-radar/
 !/ebay-sync/
+!/ebay-status/
 
 # --- Zugangsdaten / Secrets ---
 .env
@@ -24,6 +25,7 @@ neuheiten_register.json
 radar_state.json
 sync_state.json
 ms_token_cache.json
+ereignisse.jsonl
 /ebay-watchdog/state/
 
 # --- Generierte Ausgaben von regenerate_descriptions.py ---

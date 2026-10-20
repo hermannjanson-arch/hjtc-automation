@@ -113,3 +113,8 @@ cd ~ && git status && git diff
 - Zuordnung: Spalte T = eBay-Nr., sonst Titelähnlichkeit + Preis; mehrdeutig -> Telegram-Rückfrage.
 - Einrichtung: MS_CLIENT_ID in ~/ebay-sync/.env (App-Registrierung, persönliche Konten, öffentlicher Client), dann venv/bin/python3 verkaufs_sync.py --einrichten (Gerätecode). Token: ms_token_cache.json (600, ignoriert). State: sync_state.json (nicht aus Backup zurückspielen).
 - Probelauf: venv/bin/python3 verkaufs_sync.py --test
+
+### ebay-status / ebay-morgenbericht (seit 20.10.2026)
+- ~/ebay-status/ereignisse.py: gemeinsames Ereignis-Protokoll ereignisse.jsonl (info/aktion/fehler, 60 Tage). Neuheiten-Radar und Verkaufs-Sync schreiben hinein; sofort per Telegram nur noch 🟢-Sets, Wochenübersicht, Monatserinnerung. Feedback-Bot und Watchdog unverändert (sofort).
+- ~/ebay-status/status.py: JSON-Status aller Dienste + Sets (für das Cockpit auf dem Mac, per SSH mit venv-Python von ebay-radar).
+- ~/ebay-status/morgenbericht.py, Timer ebay-morgenbericht.timer täglich 07:30 Europe/Berlin: Verkäufe 24 h, To-dos, Neuigkeiten, Systemstatus. Test: --test

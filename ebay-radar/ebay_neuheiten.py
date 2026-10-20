@@ -28,6 +28,11 @@ from zoneinfo import ZoneInfo
 import requests
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(Path.home() / 'ebay-status'))
+try:
+    import ereignisse                    # gemeinsames Ereignis-Protokoll (Morgenbericht/Cockpit)
+except ImportError:
+    ereignisse = None
 REGISTER = HERE / 'neuheiten_register.json'
 BERLIN = ZoneInfo('Europe/Berlin')
 
@@ -202,6 +207,14 @@ def lauf(test):
                                'laender': dict(o['laender'])}
     log.info('%s Angebote, %s Präfixe, %s neu%s', len(items), len(pre), len(neu), ' (Erstlauf: nur registriert)' if erster_lauf else '')
     for p, o in sorted(neu, key=lambda x: -len(x[1]['ids'])):
+        de0 = o['laender'].get('DE', 0)
+        chance = prognose(o['name'] + ' ' + ' '.join(o['titel'][:20]), de0)
+        kurz = f"Neues Set {p}: {o['name']}{' (' + o['jahr'] + ')' if o['jahr'] else ''} · {len(o['ids'])} Angebote, DE {de0} · {chance.split(' · ')[0]}"
+        if ereignisse and not test:
+            ereignisse.melden('Neuheiten-Radar', 'info', kurz, praefix=p)
+        if ereignisse and '🟢' not in chance:
+            log.info('nicht dringend, nur Morgenbericht: %s', kurz)
+            continue                          # nur 🟢 kommt sofort, der Rest im Morgenbericht
         bsp = [i for i in o['ids'] if not BOX.search(items[i]['titel'])][:3] or o['ids'][:3]
         laender = ', '.join(f'{k} {v}' for k, v in o['laender'].most_common())
         de = o['laender'].get('DE', 0)
@@ -260,6 +273,8 @@ def monatscheck(reg, test):
             'Schreib Claude „Terapeak-Check“ (Chrome offen, bei eBay eingeloggt, ca. 15 Min.). '
             'Geprüft werden DE-Box-Aufschlag ≥ 40 % und erste DE-Einzelverkäufe ≥ 10 €.\n\n')
     telegram(text + ('\n'.join(faellig) if faellig else 'Diesen Monat keine neuen Sets mit Chance – nur die bekannten Linien prüfen.'), test)
+    if ereignisse and not test:
+        ereignisse.melden('Neuheiten-Radar', 'aktion', f'Monatlicher Terapeak-Check fällig ({len(faellig)} Sets) – Claude „Terapeak-Check“ schreiben')
 
 
 def main():
