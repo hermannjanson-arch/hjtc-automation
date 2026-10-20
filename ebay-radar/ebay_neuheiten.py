@@ -36,6 +36,7 @@ MARKTPLAETZE = ['EBAY_US', 'EBAY_GB', 'EBAY_DE']
 SEITEN = 5                     # je 200 neueste Angebote
 MIN_ANGEBOTE = 2               # ab so vielen Angeboten gilt ein Präfix als echt (Tippfehler ausfiltern)
 BEOBACHTEN_TAGE = 90           # Sets so lange in der Wochenübersicht verfolgen
+EIGENER_SHOP = 'hjtc.vault'     # eigene Angebote zählen nicht als Konkurrenz
 
 CODE = re.compile(r'\b([A-Z]{2,5})-([A-Z]{1,6})-?(\d{1,3})\b')
 BOX = re.compile(r'\b(box|hobby|blaster|booster|pack|packs|case|display|sealed|ovp)\b', re.I)
@@ -44,7 +45,7 @@ STOP = set('kakawow card cards trading tcg the of and a an no nr new rare holo f
 # Prognose (geeicht am 20.10.2026 an 11 neueren Sets, siehe berichte/scouting/2026-10-20_Eichung_neue_Sets.md):
 # Entscheidend war die Stärke der Franchise in DE; DE-Konkurrenz bestimmt, wie lange das Fenster offen ist.
 FRANCHISE_DE = [
-    (2, 'stark', r'harry potter|hogwarts|disney|pixar|stranger things|toy story|frozen|stitch|lion king|zootopia'),
+    (2, 'stark', r'potter|hogwarts|disney|pixar|stranger things|toy story|frozen|stitch|lion king|zootopia'),
     (1, 'mittel', r'marvel|avengers|spider|game of thrones|star wars|mandalorian|dune|lord of the rings|hobbit|lotr|'
                   r'miraculous|ladybug|pok[eé]mon|one piece|naruto|demon slayer|dragon ball|jurassic|wednesday'),
     (0, 'schwach', r'\bdc\b|batman|superman|twilight|tom (and|&) jerry|warner|looney|my little pony|minions|sanrio|tokidoki'),
@@ -125,6 +126,8 @@ def auswerten(items):
     """Je Präfix: Anzahl, Länder, Preise (Einzelkarten in EUR/USD/GBP getrennt), Beispiele, Set-Name."""
     pre = {}
     for iid, it in items.items():
+        if it['verkaeufer'] == EIGENER_SHOP:
+            continue
         for p in {m.group(1) for m in CODE.finditer(it['titel'])}:
             o = pre.setdefault(p, {'ids': [], 'titel': [], 'laender': collections.Counter(), 'verkaeufer': set(),
                                    'preise': collections.defaultdict(list), 'erst': '9999', 'jahre': collections.Counter()})
